@@ -2,6 +2,15 @@ FROM php:8.4-cli-bookworm
 
 WORKDIR /app
 
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    LOG_CHANNEL=stderr \
+    SESSION_DRIVER=file \
+    CACHE_STORE=file \
+    QUEUE_CONNECTION=sync \
+    DB_CONNECTION=sqlite \
+    DB_DATABASE=/app/database/database.sqlite
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
@@ -43,8 +52,17 @@ COPY . .
 
 RUN npm run build \
     && composer dump-autoload --optimize --no-scripts \
-    && php artisan package:discover --ansi
+    && php artisan package:discover --ansi \
+    && mkdir -p \
+        bootstrap/cache \
+        database \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+    && touch database/database.sqlite \
+    && chmod +x docker/start.sh
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["docker/start.sh"]
